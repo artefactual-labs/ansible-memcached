@@ -1,0 +1,14 @@
+---
+- name: "Install memcached packages"
+  apt: "pkg=memcached state=present update_cache=yes cache_valid_time=3600"
+
+- name: Write memcached.conf
+  template: "src=memcached.conf.j2 dest=/etc/memcached.conf owner=root group=root mode=0644"
+  notify:
+    - "Restart memcached"
+
+- name: "Set the max open file descriptors"
+  sysctl: "name=fs.file-max value={{ memcached_fs_file_max }} state=present"
+
+- name: "Start and enable the memcached service"
+  service: "name=memcached state=started enabled=yes"
