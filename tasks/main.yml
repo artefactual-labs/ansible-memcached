@@ -1,11 +1,29 @@
 ---
 - name: "Install memcached packages"
   apt: "pkg=memcached state=present update_cache=yes cache_valid_time=3600"
+  when: ansible_os_family == "Debian"
 
-- name: Write memcached.conf
+- name: "Add epel-release repository"
+  yum:
+    name: "epel-release"
+    state: "latest"
+  when: ansible_os_family == "RedHat"
+
+- name: "Install memcached packages"
+  yum: "name=memcached state=latest"
+  when: ansible_os_family == "RedHat"
+
+- name: "Write memcached.conf"
   template: "src=memcached.conf.j2 dest=/etc/memcached.conf owner=root group=root mode=0644"
   notify:
     - "Restart memcached"
+  when: ansible_os_family == "Debian"
+
+- name: "Write sysconfig/memcached (RedHat)"
+  template: "src=etc_sysconfig_memcached.j2 dest=/etc/sysconfig/memcached owner=root group=root mode=0644"
+  notify:
+    - "Restart memcached"
+  when: ansible_os_family == "RedHat"
 
 - name: "Set the max open file descriptors"
   sysctl: "name=fs.file-max value={{ memcached_fs_file_max }} state=present"
