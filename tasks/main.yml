@@ -1,17 +1,27 @@
 ---
-- name: "Install memcached packages"
-  apt: "pkg=memcached state=present update_cache=yes cache_valid_time=3600"
-  when: ansible_os_family == "Debian"
-
-- name: "Add epel-release repository"
+- name: "Install scl repo (CentOS)"
   yum:
-    name: "epel-release"
-    state: "latest"
-  when: ansible_os_family == "RedHat"
+    name: "centos-release-scl"
+    state: "installed"
+  when:
+    - ansible_distribution == "CentOS"
+
+- name: "Install scl repo (RedHat)"
+  command: "yum-config-manager --enable rhel-server-rhscl-7-rpm"
+  when:
+    - ansible_distribution == "RedHat"
+
+- name: "Enable SCL repo"
+  ini_file:
+    path: /etc/yum.repos.d/redhat.repo
+    section: rhel-server-rhscl-7-rpms
+    option: enabled
+    value: 1
+  when:
+    - ansible_distribution == "RedHat"
 
 - name: "Install memcached packages"
-  yum: "name=memcached state=latest"
-  when: ansible_os_family == "RedHat"
+  package: "name=memcached state=latest"
 
 - name: "Write memcached.conf"
   template: "src=memcached.conf.j2 dest=/etc/memcached.conf owner=root group=root mode=0644"
