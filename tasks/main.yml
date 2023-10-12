@@ -1,17 +1,20 @@
 ---
-- name: "Install scl repo (CentOS)"
+- name: "Install scl repo (CentOS 7)"
   yum:
     name: "centos-release-scl"
     state: "installed"
   when:
     - ansible_distribution == "CentOS"
+    - install_rpm_repositories|bool
 
-- name: "Install scl repo (RedHat)"
+- name: "Install scl repo (RedHat 7)"
   command: "yum-config-manager --enable rhel-server-rhscl-7-rpm"
   when:
     - ansible_distribution == "RedHat"
+    - ansible_facts['distribution_major_version'] <= "7"
+    - install_rpm_repositories|bool
 
-- name: "Enable SCL repo"
+- name: "Enable SCL repo (RedHat 7)"
   ini_file:
     path: /etc/yum.repos.d/redhat.repo
     section: rhel-server-rhscl-7-rpms
@@ -19,21 +22,23 @@
     value: 1
   when:
     - ansible_distribution == "RedHat"
+    - ansible_facts['distribution_major_version'] <= "7"
+    - install_rpm_repositories|bool
 
 - name: "Install memcached packages"
   package: "name=memcached state=latest"
 
-- name: "Write memcached.conf"
+- name: "Write memcached.conf (Ubuntu)"
   template: "src=memcached.conf.j2 dest=/etc/memcached.conf owner=root group=root mode=0644"
   notify:
     - "Restart memcached"
   when: ansible_os_family == "Debian"
 
-- name: "Write sysconfig/memcached (RedHat)"
+- name: "Write sysconfig/memcached (RedHat/CentOS/Rocky)"
   template: "src=etc_sysconfig_memcached.j2 dest=/etc/sysconfig/memcached owner=root group=root mode=0644"
   notify:
     - "Restart memcached"
-  when: ansible_os_family == "RedHat"
+  when: ansible_os_family in ['RedHat','Rocky']
 
 - name: "Set the max open file descriptors"
   sysctl: "name=fs.file-max value={{ memcached_fs_file_max }} state=present"
